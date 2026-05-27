@@ -1,0 +1,154 @@
+{
+  "skill_name": "task-clarifier",
+  "evals": [
+    {
+      "id": 1,
+      "name": "cpu-research",
+      "prompt": "帮我整理 20年到26年 intel 和 amd 生产的家用 CPU 型号。",
+      "expected_output": "The assistant should not immediately produce the CPU list. It should restate the goal and ask a clarifying question about the definition of '家用 CPU', offering concrete options such as desktop consumer CPUs only, including laptop CPUs, or including workstation/server models separately.",
+      "assertions": [
+        "Restates the user's task as organizing 2020-2026 Intel and AMD home/consumer CPU models.",
+        "Asks a clarifying question before producing the CPU list.",
+        "The first clarifying question is about a high-impact ambiguity such as the definition of home CPU, desktop versus laptop, or included/excluded categories.",
+        "Provides multiple concrete options with one recommended option.",
+        "Does not start listing CPU models in the first response."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "sales-analysis",
+      "prompt": "帮我分析一下这个销售表，看看有什么问题。",
+      "expected_output": "The assistant should ask what kind of analysis the user wants, such as trend/anomaly detection, grouped statistics, business recommendations, or chart/report output, and should offer a recommended default.",
+      "assertions": [
+        "Restates that the user wants useful findings from a sales table.",
+        "Asks for analysis direction or business goal before analyzing.",
+        "Offers multiple concrete analysis options.",
+        "Marks or explains a recommended default option.",
+        "Does not fabricate findings from an unseen table."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "event-plan",
+      "prompt": "给我写一份活动策划方案。",
+      "expected_output": "The assistant should ask about the activity type or usage scenario before writing the plan, with options such as internal company event, campus event, marketing event, or community/government event.",
+      "assertions": [
+        "Restates that the user wants an executable activity/event plan.",
+        "Asks about activity type, audience, or usage scenario before writing the full plan.",
+        "Offers multiple concrete scenario options.",
+        "Includes one recommended option or default with a reason.",
+        "Does not produce a full event plan immediately."
+      ]
+    },
+    {
+      "id": 4,
+      "name": "web-polish",
+      "prompt": "把这个网页优化一下，让它看起来高级一点。",
+      "expected_output": "The assistant should clarify the target audience, style direction, and scope of visual changes before editing. It should avoid starting implementation immediately unless the user asks to use defaults.",
+      "assertions": [
+        "Restates that the user wants a webpage visual polish or quality improvement.",
+        "Asks a clarifying question before editing.",
+        "The question targets a high-impact design ambiguity such as audience, style direction, brand tone, or scope of changes.",
+        "Provides concrete style/scope options with one recommended option.",
+        "Does not begin implementation or claim edits were made in the first response."
+      ]
+    },
+    {
+      "id": 5,
+      "name": "skip-questions",
+      "prompt": "不要问我，直接按你的判断帮我把 README 改得更清楚。",
+      "expected_output": "The assistant should skip the clarification loop because the user explicitly requested no questions. It should proceed with sensible assumptions and state them briefly.",
+      "assertions": [
+        "Does not ask a clarifying question.",
+        "Acknowledges or follows the user's instruction to use the assistant's judgment.",
+        "States sensible assumptions briefly, or proceeds directly if files are available.",
+        "Frames the next action as improving README clarity rather than starting a clarification loop."
+      ]
+    },
+    {
+      "id": 6,
+      "name": "simple-translation-negative",
+      "prompt": "把这句话翻译成英文：我明天下午三点到。",
+      "expected_output": "The assistant should not trigger a clarification loop. It should directly translate the sentence.",
+      "assertions": [
+        "Does not ask a clarifying question.",
+        "Provides the English translation directly.",
+        "Does not present multiple options or a task confirmation card."
+      ]
+    },
+    {
+      "id": 7,
+      "name": "simple-command-negative",
+      "prompt": "查看当前目录有哪些文件。",
+      "expected_output": "The assistant should execute or answer the simple file-listing request directly instead of asking requirement clarification questions.",
+      "assertions": [
+        "Does not ask about output format, scope, or success criteria.",
+        "Treats the request as a simple direct command.",
+        "Does not produce a task confirmation card."
+      ]
+    },
+    {
+      "id": 8,
+      "name": "medium-ambiguity-boundary",
+      "prompt": "帮我写一份周报。",
+      "expected_output": "This is a boundary case. The request is common and has a conventional format (weekly report), but the audience, detail level, and content focus are unclear. The assistant should either ask one targeted question (e.g., about audience or focus area) or state assumptions and proceed — both are acceptable. The key is that it does NOT ignore the ambiguity entirely.",
+      "assertions": [
+        "Does not produce a full weekly report immediately without any clarification or stated assumptions.",
+        "Either asks at least one clarifying question about audience, focus, format, or detail level, OR states explicit assumptions about these dimensions before proceeding.",
+        "If asking a question, provides concrete options with a recommended default.",
+        "Does not ask more than two questions in the first response."
+      ]
+    },
+    {
+      "id": 9,
+      "name": "full-workflow-confirmation-card",
+      "prompt": "Turn 1: 帮我整理 20年到26年 intel 和 amd 生产的家用 CPU 型号。\nTurn 2: A\nTurn 3: 开始",
+      "expected_output": "Across three turns, the assistant should: (1) restate and ask about scope, (2) present a Task Confirmation Card after the user selects A, (3) begin execution after the user says '开始'. The Task Confirmation Card must contain at least: goal, scope, output format.",
+      "assertions": [
+        "Turn 1: Restates the goal and asks a clarifying question with multiple options (A/B/C/D/E or similar).",
+        "Turn 2: After user selects A, presents a Task Confirmation Card (任务确认) with structured fields.",
+        "Turn 2 Confirmation Card includes at least: 目标 (goal), 范围 (scope), 输出形式 (output format).",
+        "Turn 3: After user says '开始', transitions to execution — does not ask another clarifying question.",
+        "The entire flow completes in exactly 3 turns, not more."
+      ]
+    },
+    {
+      "id": 10,
+      "name": "fast-path-recommended",
+      "prompt": "帮我整理 20年到26年 intel 和 amd 生产的家用 CPU 型号。按你的推荐来，别问了。",
+      "expected_output": "The user is asking for a task that normally triggers clarification, but explicitly says to use the recommended approach and stop asking. The assistant should proceed with sensible defaults, present a brief Task Confirmation Card, and start execution.",
+      "assertions": [
+        "Does not ask a clarifying question.",
+        "States the assumptions or recommended approach briefly.",
+        "Presents a Task Confirmation Card (任务确认) summarizing the assumed specification.",
+        "Transitions to execution without waiting for additional confirmation."
+      ]
+    },
+    {
+      "id": 11,
+      "name": "list-all-options",
+      "prompt": "帮我统计各手机品牌的最新发布产品。",
+      "expected_output": "The assistant should ask which phone brands to include, offering some example brands as options. Crucially, the options must include a fixed option like '告诉我有哪些可选择的值' so the user can discover the full list of available brands before deciding.",
+      "assertions": [
+        "Restates the user's task as collecting latest product releases by phone brand.",
+        "Asks a clarifying question about which brands to include.",
+        "Provides multiple concrete brand options as examples.",
+        "Includes a fixed option like '告诉我有哪些可选择的值' or '告诉我有哪些品牌可选' allowing the user to see the full list of available choices.",
+        "Does not assume a specific brand list without user confirmation."
+      ]
+    },
+    {
+      "id": 12,
+      "name": "multi-dimension-clarification",
+      "prompt": "Turn 1: 帮我查2026年的发布的所有电脑配件\nTurn 2: a",
+      "expected_output": "After the user selects a category (scope), the assistant should NOT immediately present a Task Confirmation Card. It should continue asking about output format or content fields, since these are still unclear and would materially change the result.",
+      "assertions": [
+        "Turn 1: Restates the goal and asks about scope with multiple options.",
+        "Turn 2: After user selects A, does NOT immediately present a full Task Confirmation Card.",
+        "Turn 2: Asks a follow-up question about output format, content fields, or another unclear dimension.",
+        "The follow-up question uses the same multiple-choice format with a recommended option.",
+        "Does not skip directly from scope selection to execution without clarifying output format."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "skill_name": "skill-dispatcher",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我给这个 move_images.py 文件添加详细的中文注释，让新手也能看懂",
+      "expected_output": "Dispatcher should route to code-commenter skill in single-skill mode. Should inform user and invoke code-commenter.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "帮我做一个漂亮的活动策划 PPT，要包含活动流程、预算表和视觉设计",
+      "expected_output": "Dispatcher should enter multi-skill mode: 1) task-clarifier to clarify event type/audience/style, 2) brainstorming to design PPT structure, 3) pptx to generate the PPT. Should present execution plan.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "分析一下这个目录下的图片数据集，看看有什么特点",
+      "expected_output": "Dispatcher should recognize this as a vague task and route to task-clarifier first to clarify what aspects to analyze, output format, etc.",
+      "files": []
+    }
+  ]
+}
