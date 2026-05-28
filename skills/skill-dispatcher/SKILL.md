@@ -1,151 +1,131 @@
 ---
 name: skill-dispatcher
-description: "Understand user intent and route tasks to the right skills, coordinating multiple skills when a request is complex. Use this skill when a user request could benefit from a specialized skill — especially multi-step tasks, vague requests, or tasks combining design + implementation + review. It analyzes the goal, breaks it into sub-tasks, maps each to the best skill, and presents an execution plan. Works as a coordinator layer above other skills: it decides WHO does WHAT, then lets each skill handle the HOW."
+description: "请求路由层。每次请求自动运行，分析用户意图，决定调用哪个 skill。简单任务直接跳过，复杂任务匹配后委托执行。覆盖中文口语：'帮我'、'搞一下'、'弄一下'、'整理'、'分析'、'看看'。当不确定用哪个 skill 时，先跑这个。"
 ---
 
 # Skill Dispatcher
 
-Understand what the user wants, figure out which skills should handle it, and coordinate them.
+分析用户意图，决定是否需要 skill、用哪个 skill、按什么顺序执行。
 
-The value of this skill is preventing two failure modes:
-1. **Missed skills**: A task that would benefit from a skill gets handled generically, producing lower quality results.
-2. **Wrong skill order**: Multiple skills are needed but invoked in the wrong sequence (e.g., implementing before clarifying requirements).
+## 为什么需要这个 skill
 
-This skill does NOT execute tasks. It analyzes, plans, and delegates.
+Claude 已经能根据 available_skills 列表自行匹配 skill。这个 skill 的价值在于：
 
-## When This Skill Runs
+1. **语义重映射**：用户说"这段代码啥意思"，字面不匹配任何 skill，但语义上应该触发 code-commenter
+2. **多 skill 编排**：复杂任务需要多个 skill 协作时，确定执行顺序
+3. **避免误触发**：简单任务不该浪费 token 加载 skill
 
-This skill triggers on requests that could benefit from specialized skills. It does NOT need to run on every single request — simple, direct tasks (like "read this file" or "what is 2+2") don't need routing.
+## 触发规则
 
-**Good triggers**: multi-step tasks, vague requests, tasks combining multiple concerns, requests matching domain-specific skills, "帮我做一个...", creative/building work.
+每次请求都运行，但只有三种结果：
 
-**Skip**: trivial questions, direct file reads, explicit /slash-command invocations, tasks where the right skill is obvious and already invoked.
+- **跳过**：不需要任何 skill（见下方判断标准）
+- **单 skill**：匹配一个 skill，调用
+- **多 skill**：编排执行计划，征求用户确认
 
 ## Workflow
 
-### Step 0: Skill Freshness Check (First Invocation Only)
+### Step 1: 判断是否需要 skill
 
-On the FIRST request in a conversation, check if skills have changed since last session:
+先看 system-reminder 中的 available_skills 列表，逐条检查是否匹配。
 
-```
-自上次对话以来，你是否新增、删除或更新了 skill？
-A. 没有，使用当前注册表（推荐）
-B. 有变化，请先扫描更新
-```
+**直接跳过（No-skill）的条件**——满足以下任一即跳过：
 
-- **A** → Use the static registry below, proceed to Step 1
-- **B** → Run dynamic scan (see "Dynamic Scan Flow"), then proceed to Step 1
+| 条件 | 示例 |
+|------|------|
+| 只需 1 次工具调用 | "读一下这个文件"、"这个变量是什么" |
+| 纯问答，无产出 | "Python 的 GIL 是什么"、"2+2" |
+| 用户明确拒绝 | "不要问直接做"、"别废话" |
+| 已经在执行中 | 连续对话的后续步骤 |
+| 已通过 /slash 指定 | 用户直接输入了 /skill-name |
 
-On SUBSEQUENT requests in the same conversation, skip this step and go directly to Step 1.
+**需要 skill 的信号**——满足以下任一即考虑：
 
-### Step 1: Analyze Intent
+| 信号 | 示例 |
+|------|------|
+| 需要创建/修改文件 | "帮我写个脚本"、"改一下这个函数" |
+| 需要多步骤 | "先分析再优化"、"做个完整的方案" |
+| 涉及特定领域 | PPT、LaTeX、模型迁移、前端设计 |
+| 需要专业输出格式 | 笔记、演示文稿、代码注释 |
+| 请求模糊需要澄清 | "帮我整理一下"、"分析分析" |
 
-Understand what the user ultimately wants. Identify:
-- **Goal**: the end result they care about
-- **Task type**: coding, design, document, research, config, review, creative
-- **Key entities**: files, formats, technologies mentioned
-- **Complexity**: single-step or multi-step?
+### Step 2: 语义匹配
 
-### Step 2: Choose Mode
+如果 Step 1 判断需要 skill，进行语义匹配：
 
-**Single-skill** — the task clearly maps to one skill with no dependencies:
-- Match against registry → inform → invoke
-- Note: If the matched skill is a Tier 1 gate (brainstorming, task-clarifier), it acts as a pre-step. After it completes, re-evaluate whether additional skills are needed for the actual execution.
+**2.1 直接匹配**——用户的话包含 skill 的触发关键词 → 直接命中
 
-**Multi-skill** — the task has multiple phases or combines concerns:
-- Proceed to Step 3
+**2.2 语义重映射**——字面不匹配但意图匹配：
 
-### Step 3: Multi-Skill Decomposition
+| 用户说 | 实际意图 | 匹配 skill |
+|--------|---------|-----------|
+| "这段代码啥意思" / "看不太懂" | 解释代码 | code-commenter |
+| "弄个好看的页面" / "搞个炫酷的" | 前端界面 | frontend-design |
+| "投了个期刊" / "论文格式不对" | LaTeX 迁移 | latex-template-migrator |
+| "把 A 的模块弄到 B 上" | 模型迁移 | model-migration |
+| "做个PPT" / "汇报slides" | 演示文稿 | pptx |
+| "记一下" / "知识点整理下" | 笔记 | note-writer |
+| "做个新skill" | skill 开发 | skill-creator |
+| "不太确定要做什么" | 澄清需求 | task-clarifier |
+| "先想想怎么做" | 头脑风暴 | brainstorming |
+| "搞一下" / "弄一下" / "整一下" | 做/创建/修改 | 视上下文而定 |
 
-#### 3.1 Break into sub-tasks
+**2.3 推断规则**：
 
-Each sub-task should have one clear purpose and produce one concrete output.
+1. 改写请求 2-3 种方式，检查是否有匹配
+2. 从格式推断：`.pptx`、`slides`、`幻灯片` → pptx
+3. 从领域推断：PyTorch、backbone、encoder → model-migration
+4. 从语气推断："不太确定" → task-clarifier
+5. 中文口语："搞/弄/整" = "做/创建/修改"
 
-#### 3.2 Map to skills
+### Step 3: 冲突解决
 
-For each sub-task, find the best skill from the registry.
+当多个 skill 都匹配时：
 
-#### 3.3 Determine order
+1. **Tier 1 优先**：task-clarifier、brainstorming 是前置 gate，先于其他 skill 运行
+2. **更具体的 wins**：latex-template-migrator > frontend-design（当任务是"论文排版"时）
+3. **语言匹配**：中文用户偏好中文 skill（前端美学设计技能 > frontend-design）
+4. **仍无法决定**：列出候选，让用户选择
 
-Which sub-tasks must happen before others? Typically:
-- Clarification before design
-- Design before implementation
-- Implementation before review
+### Step 4: 执行
 
-#### 3.4 Present the plan
+**单 skill**：
+- 告知用户："将使用 [skill-name] 处理这个任务"
+- 调用该 skill
+
+**多 skill**：
+- 呈现执行计划：
 
 ```
 执行计划（共 N 步）：
 
-步骤 1: [what to do]
+步骤 1: [做什么]
   → 使用: [skill-name]
-  → 产出: [concrete output]
+  → 产出: [具体产出]
 
-步骤 2: [what to do]
+步骤 2: [做什么]
   → 使用: [skill-name]
-  → 产出: [concrete output]
-  → 前置: 需要步骤 1 的产出
+  → 产出: [具体产出]
+  → 前置: 需要步骤 1
 
 是否按此计划执行？
 ```
 
-The user can approve, skip steps, reorder, or substitute skills.
-
-#### 3.5 Execute
-
-Execute each step by invoking the assigned skill. Each step runs independently — pass context from previous steps by including relevant information in the skill invocation prompt, not through file-based data passing.
-
-After all steps complete:
-
-```
-执行完成：
-✅ 步骤 1: [result summary]
-✅ 步骤 2: [result summary]
-```
+用户可批准、跳步、调整顺序。
 
 ## Skill Registry
 
-The static registry is maintained in `references/skill-registry.md`. It maps task patterns to skills with priority numbers for conflict resolution.
+**不维护静态注册表。** 直接使用 system-reminder 中的 available_skills 列表作为注册来源。该列表由 Claude Code 自动维护，始终是最新的。
 
-Load the registry at the start of Step 2 (Choose Mode) when matching tasks to skills.
+新增/删除 skill 后无需手动更新任何文件。
 
-## Dynamic Scan Flow
+## 常见多 skill 模式
 
-When the user indicates skills have changed:
+作为编排参考，不是硬性规则：
 
-### 1. Scan directories
-
-Read SKILL.md files from:
-- `~/.claude/skills/` (symlinks)
-- `~/.cc-switch/skills/` (actual files)
-- `~/.agents/skills/` (actual files)
-
-Extract `name` and `description` from each.
-
-### 2. Add built-in skills
-
-These are always available but not in skill directories:
-update-config, keybindings-help, verify, code-review, fewer-permission-prompts, loop, claude-api, run, init, review, security-review
-
-### 3. Rebuild registry
-
-For each skill: assign tier, derive trigger conditions, set priority.
-
-### 4. Report changes
-
-```
-技能注册表已更新：
-- 新增：[list]
-- 移除：[list]
-- 共计：[total] 个 skill
-```
-
-Then continue to Step 1.
-
-## Maintenance
-
-The static registry is the default. Update it when:
-- Dynamic scan reveals changes
-- Skills are installed/removed via `npx skills`
-
-The dynamic scan is the primary up-to-date mechanism. The static registry avoids scanning on every request.
+| 模式 | 适用场景 | 顺序 |
+|------|---------|------|
+| 澄清 → 设计 → 执行 | 模糊的创意请求 | task-clarifier → brainstorming → domain-skill |
+| 理解 → 执行 → 验证 | 代码变更 | karpathy-guidelines → domain-skill → verify |
+| 澄清 → 设计 → 执行 → 审查 | 高风险交付 | task-clarifier → brainstorming → domain-skill → code-review |
+| 研究 → 执行 → 注释 | 学习导向 | task-clarifier → domain-skill → code-commenter |

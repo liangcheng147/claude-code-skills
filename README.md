@@ -9,8 +9,9 @@
 git clone https://github.com/liangcheng147/claude-code-skills.git
 
 # 创建符号链接到 Claude Code skills 目录
-ln -s /path/to/claude-code-skills/skills/* ~/.claude/skills/
+ln -s /path/to/claude-code-skills/skills/* ~/.claude/skills/    
 ```
+或者使用skill管理工具，如skill-manager
 
 ## 技能列表
 

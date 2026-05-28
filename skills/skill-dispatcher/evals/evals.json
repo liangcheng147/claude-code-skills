@@ -4,20 +4,86 @@
     {
       "id": 1,
       "prompt": "帮我给这个 move_images.py 文件添加详细的中文注释，让新手也能看懂",
-      "expected_output": "Dispatcher should route to code-commenter skill in single-skill mode. Should inform user and invoke code-commenter.",
-      "files": []
+      "expected_output": "直接匹配 code-commenter，单 skill 模式调用",
+      "files": [],
+      "category": "single-skill-direct"
     },
     {
       "id": 2,
       "prompt": "帮我做一个漂亮的活动策划 PPT，要包含活动流程、预算表和视觉设计",
-      "expected_output": "Dispatcher should enter multi-skill mode: 1) task-clarifier to clarify event type/audience/style, 2) brainstorming to design PPT structure, 3) pptx to generate the PPT. Should present execution plan.",
-      "files": []
+      "expected_output": "多 skill：task-clarifier → brainstorming → pptx，呈现执行计划",
+      "files": [],
+      "category": "multi-skill"
     },
     {
       "id": 3,
       "prompt": "分析一下这个目录下的图片数据集，看看有什么特点",
-      "expected_output": "Dispatcher should recognize this as a vague task and route to task-clarifier first to clarify what aspects to analyze, output format, etc.",
-      "files": []
+      "expected_output": "语义匹配 task-clarifier（模糊请求），先澄清再执行",
+      "files": [],
+      "category": "semantic-match"
+    },
+    {
+      "id": 4,
+      "prompt": "Python 的 GIL 是什么",
+      "expected_output": "No-skill，纯问答，直接回答",
+      "files": [],
+      "category": "no-skill"
+    },
+    {
+      "id": 5,
+      "prompt": "读一下 config.yaml",
+      "expected_output": "No-skill，单次工具调用，直接读取",
+      "files": [],
+      "category": "no-skill"
+    },
+    {
+      "id": 6,
+      "prompt": "这段代码啥意思，看不太懂",
+      "expected_output": "语义重映射：'啥意思/看不懂' → 解释代码 → code-commenter",
+      "files": [],
+      "category": "semantic-remap"
+    },
+    {
+      "id": 7,
+      "prompt": "帮我搞个炫酷的登录页面",
+      "expected_output": "语义匹配 frontend-design 或前端美学设计技能，可能需要 brainstorming 先设计",
+      "files": [],
+      "category": "semantic-match-conflict"
+    },
+    {
+      "id": 8,
+      "prompt": "论文要投 IEEE TGRS，格式不对",
+      "expected_output": "语义推断：'投期刊/格式' → latex-template-migrator",
+      "files": [],
+      "category": "semantic-infer"
+    },
+    {
+      "id": 9,
+      "prompt": "不要问，直接帮我把这个函数重写了",
+      "expected_output": "No-skill，用户明确拒绝澄清，直接执行",
+      "files": [],
+      "category": "no-skill-user-reject"
+    },
+    {
+      "id": 10,
+      "prompt": "帮我整理一下",
+      "expected_output": "冲突：note-writer vs task-clarifier，需要进一步判断上下文或询问用户",
+      "files": [],
+      "category": "conflict-resolution"
+    },
+    {
+      "id": 11,
+      "prompt": "把 ResNet 的 backbone 换成 EfficientNet",
+      "expected_output": "语义推断：backbone/替换 → model-migration",
+      "files": [],
+      "category": "semantic-infer"
+    },
+    {
+      "id": 12,
+      "prompt": "2+2",
+      "expected_output": "No-skill，最简单的计算",
+      "files": [],
+      "category": "no-skill-trivial"
     }
   ]
 }
